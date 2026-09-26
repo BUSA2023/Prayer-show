@@ -42,6 +42,18 @@
             border-bottom: 2px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;
         }
 
+        .summary-bar {
+            display: flex;
+            justify-content: space-between;
+            background: white;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+            font-weight: bold;
+            color: #374151;
+        }
+        .summary-bar span { display: flex; align-items: center; gap: 4px;}
+
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .fade-in { animation: fadeIn 0.3s ease-in; }
@@ -55,7 +67,7 @@
         <p class="text-blue-700 font-bold text-lg animate-pulse">Loading Madrasa Records...</p>
     </div>
 
-    <nav id="main-nav" class="bg-white border-b border-gray-200 shadow-sm z-40 flex-shrink-0">
+    <nav id="main-nav" class="bg-white border-b border-gray-200 shadow-sm z-40 flex-shrink-0 hidden">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center gap-3">
@@ -77,6 +89,18 @@
     <main id="app-content" class="flex-grow overflow-y-auto bg-[#f8fafc] p-4 md:p-6 w-full fade-in hidden">
         <div class="max-w-[1400px] mx-auto space-y-6">
             
+            <!-- Global Month Selector (Affects entire app) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800" id="month-title">Current Tracking Period</h2>
+                    <p class="text-xs text-gray-500">You can view past months by selecting a different date.</p>
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <label class="text-sm font-bold text-gray-700 shrink-0"><i class="fa-regular fa-calendar mr-1"></i> View Month:</label>
+                    <input type="month" id="student-month-selector" class="w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer font-medium bg-gray-50 text-gray-700 shadow-inner">
+                </div>
+            </div>
+
             <!-- Dashboard View -->
             <div id="student-dashboard-view" class="space-y-6">
                 <!-- Message and Insights -->
@@ -99,8 +123,7 @@
                 <!-- Detailed Breakdown Leaderboard -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                     <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
-                        <h2 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-blue-500 mr-2"></i> Detailed Prayer Breakdown</h2>
-                        <div class="text-xs sm:text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium shadow-inner"><i class="fa-regular fa-calendar mr-1"></i> <span id="current-month-display"></span></div>
+                        <h2 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-blue-500 mr-2"></i> Overall Leaderboard</h2>
                     </div>
                     <div id="detailed-stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
                         <!-- Populated by JS -->
@@ -110,13 +133,6 @@
 
             <!-- Sheets View -->
             <div id="sheet-view" class="hidden space-y-4">
-                <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">Attendance Record Sheets</h2>
-                        <p class="text-xs text-gray-500">Read-only view of your daily prayers matching the madrasa registers.</p>
-                    </div>
-                </div>
-                
                 <div id="paper-sheets-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-10">
                     <!-- Populated by JS -->
                 </div>
@@ -127,21 +143,22 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // User's Firebase Configuration
-        const appId = "prayer-5f162";
         const firebaseConfig = {
             apiKey: "AIzaSyCwKSTl9ZXrLOF41kCmK5BVlNSEPecRK_Y",
             authDomain: "prayer-5f162.firebaseapp.com",
             projectId: "prayer-5f162",
             storageBucket: "prayer-5f162.firebasestorage.app",
             messagingSenderId: "728078267159",
-            appId: "1:728078267159:web:96ec460dc907f16f163d52"
+            appId: "1:728078267159:web:96ec460dc907f16f163d52",
+            measurementId: "G-1P878W2W5J"
         };
 
         const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
@@ -154,13 +171,44 @@
         
         let allRecords = {};
         
-        // Date Setup (From the 9th)
         const today = new Date();
-        const minDate = new Date(today.getFullYear(), today.getMonth(), 9);
-        if (today.getDate() < 9) minDate.setMonth(minDate.getMonth() - 1);
-        
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        document.getElementById('current-month-display').innerText = `Tracking since ${monthNames[minDate.getMonth()]} 9`;
+        const currentYearStr = today.getFullYear();
+        const currentMonthStr = String(today.getMonth() + 1).padStart(2, '0');
+        let selectedViewMonth = `${currentYearStr}-${currentMonthStr}`;
+
+        const monthSelector = document.getElementById('student-month-selector');
+        monthSelector.value = selectedViewMonth;
+
+        monthSelector.addEventListener('change', (e) => {
+            selectedViewMonth = e.target.value;
+            const [y, m] = selectedViewMonth.split('-');
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('month-title').innerText = `${monthNames[parseInt(m)-1]} ${y} Tracking Period`;
+            
+            updateViews(); // Recalculate everything for the new month
+        });
+
+        // Smart Date Generator
+        function getDatesForViewMonth() {
+            const [y, m] = selectedViewMonth.split('-');
+            const year = parseInt(y);
+            const month = parseInt(m) - 1; 
+            
+            let startDay = 1;
+            // Strict check: if September 2026, start on the 9th
+            if (year === 2026 && month === 8) { 
+                startDay = 9;
+            }
+            
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const dates = [];
+            
+            for (let d = startDay; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                dates.push(dateStr);
+            }
+            return dates;
+        }
 
         async function initApp() {
             try {
@@ -175,8 +223,8 @@
         }
 
         function setupListeners() {
-            const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global');
-            const recordsRef = collection(db, 'artifacts', appId, 'public', 'data', 'salah_monthly');
+            const settingsRef = doc(db, 'madrasa_settings', 'global');
+            const recordsRef = collection(db, 'salah_monthly');
 
             onSnapshot(settingsRef, (docSnap) => {
                 const msg = docSnap.exists() ? docSnap.data().advisement : "Welcome to Noorani Madrasa Salah Tracker!";
@@ -188,7 +236,13 @@
                 snapshot.forEach(doc => { allRecords[doc.id] = doc.data(); });
                 
                 document.getElementById('loading-overlay').classList.add('hidden');
+                document.getElementById('main-nav').classList.remove('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
+                
+                // Initialize title
+                const [y, m] = selectedViewMonth.split('-');
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                document.getElementById('month-title').innerText = `${monthNames[parseInt(m)-1]} ${y} Tracking Period`;
                 
                 updateViews();
             }, (error) => console.error(error));
@@ -196,44 +250,32 @@
 
         function calculateDetailedStats() {
             let stats = {};
-            // Initialize structures
             STUDENTS.forEach(s => {
                 stats[s.name] = { 
                     totalCount: 0, 
                     totalPotential: 0, 
                     gender: s.gender,
-                    excusedDays: 0, // Track excused days to explain the UI
+                    excusedDays: 0,
                     breakdown: { 'Subh': 0, 'Luhr': 0, 'Asr': 0, 'Magrib': 0, 'Isha': 0 }
                 };
             });
             
-            const dates = [];
-            let curr = new Date(minDate);
-            // Generate up to 30 days
-            for(let i=0; i<30; i++) {
-                dates.push(curr.toISOString().split('T')[0]);
-                curr.setDate(curr.getDate() + 1);
-            }
+            const dates = getDatesForViewMonth();
+            let calcEnd = new Date(); // Do not count future days into potential
 
-            // Loop through all dates up to today to calculate actuals
-            // We do not add future dates to potential.
-            let calcEnd = new Date();
             dates.forEach(date => {
                 const dateObj = new Date(date);
-                if (dateObj > calcEnd) return; // Future dates skipped entirely
+                if (dateObj > calcEnd) return; 
                 
                 const dayData = allRecords[date] || {};
                 
                 STUDENTS.forEach(s => {
                     const sData = dayData[s.name] || {};
                     
-                    // CRITICAL LOGIC FOR MENSES:
-                    // If a student is excused, do NOT add to totalPotential. 
-                    // This means a girl on leave isn't penalized for missing 5 prayers that day.
+                    // EXCUSED LOGIC: Days marked as excused are completely ignored in potential
                     if (sData.excused === true) {
                         stats[s.name].excusedDays++; 
                     } else {
-                        // Normal tracking day
                         stats[s.name].totalPotential += 5;
                         PRAYERS.forEach(p => { 
                             if (sData[p] === true) {
@@ -251,15 +293,14 @@
         function updateViews() {
             const { stats, dates } = calculateDetailedStats();
             
-            // 1. Render Detailed Stats Cards
+            // Render Detailed Stats Cards
             const container = document.getElementById('detailed-stats-container');
             container.innerHTML = '';
             
-            // Sort by percentage instead of raw count, to be fair to those with excused days
             let ranked = Object.entries(stats).sort((a,b) => {
                 let pctA = a[1].totalPotential === 0 ? 0 : (a[1].totalCount / a[1].totalPotential);
                 let pctB = b[1].totalPotential === 0 ? 0 : (b[1].totalCount / b[1].totalPotential);
-                return pctB - pctA;
+                return pctB - pctA; // Sort by percentage, fair for excused days
             });
             
             ranked.forEach(([name, data], index) => {
@@ -271,24 +312,21 @@
                 let pct = data.totalPotential === 0 ? 100 : Math.round((data.totalCount/data.totalPotential)*100);
                 let colorClass = data.gender === 'girl' ? 'bg-pink-50 border-pink-100' : 'bg-blue-50 border-blue-100';
 
-                // Create the detailed breakdown list
                 let breakdownHtml = PRAYERS.map((p, i) => `
-                    <div class="flex justify-between items-center text-sm py-1.5 border-b border-black/5 last:border-0">
+                    <div class="flex justify-between items-center text-sm py-1 border-b border-black/5 last:border-0">
                         <span class="text-gray-600 font-medium">${p} <span class="arabic-text text-gray-400 ml-1">(${PRAYER_ARABIC[i]})</span></span>
-                        <span class="font-bold text-gray-800 bg-white px-2 py-0.5 rounded shadow-sm">${data.breakdown[p]}</span>
+                        <span class="font-bold text-gray-800 bg-white px-2 rounded shadow-sm">${data.breakdown[p]}</span>
                     </div>
                 `).join('');
 
-                // Display excused days clearly so they know it's not held against them
                 let excusedHtml = data.excusedDays > 0 
                     ? `<div class="text-xs text-pink-600 font-medium mt-2 bg-pink-100/50 p-1.5 rounded text-center border border-pink-200/50">
-                        <i class="fa-solid fa-moon mr-1"></i> ${data.excusedDays} day(s) on leave<br>
-                        <span class="text-[10px] text-pink-500">(Excluded from potential total)</span>
+                        <i class="fa-solid fa-moon mr-1"></i> ${data.excusedDays} day(s) excused leave<br>
                        </div>` 
                     : '';
 
                 container.innerHTML += `
-                    <div class="${colorClass} border rounded-2xl p-5 flex flex-col relative transition hover:shadow-lg hover:-translate-y-1 bg-gradient-to-b from-transparent to-black/[0.02]">
+                    <div class="${colorClass} border rounded-2xl p-5 flex flex-col relative transition hover:shadow-lg hover:-translate-y-1">
                         <div class="flex justify-between items-center mb-4">
                             <h4 class="font-bold text-gray-800 text-xl uppercase tracking-wide">${name}</h4>
                             ${medal}
@@ -296,20 +334,20 @@
                         
                         <div class="flex items-end gap-2 mb-2">
                             <span class="text-4xl font-black text-gray-800 leading-none">${data.totalCount}</span>
-                            <span class="text-sm font-medium text-gray-500 mb-1 tracking-tight">/ ${data.totalPotential} Prayers</span>
+                            <span class="text-sm font-medium text-gray-500 mb-1 tracking-tight">/ ${data.totalPotential}</span>
                         </div>
                         
-                        <div class="flex-grow mb-4 mt-3 bg-white/70 backdrop-blur-sm p-3 rounded-xl border border-white">
+                        <div class="flex-grow mb-4 mt-2 bg-white/70 p-3 rounded-xl border border-white">
                             ${breakdownHtml}
                         </div>
                         
                         <div class="mt-auto">
                             <div class="flex justify-between text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1.5">
-                                <span>Attendance Rate</span>
+                                <span>Completion</span>
                                 <span>${pct}%</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2 mb-1 shadow-inner overflow-hidden">
-                                <div class="bg-blue-500 h-full rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
+                                <div class="bg-blue-500 h-full rounded-full" style="width: ${pct}%"></div>
                             </div>
                             ${excusedHtml}
                         </div>
@@ -317,19 +355,13 @@
                 `;
             });
 
-            // 2. Generate Smart Insights based on detailed data
+            // Smart Insights
             const list = document.getElementById('smart-insights-list');
             list.innerHTML = '';
             if (ranked[0][1].totalCount > 0) {
-                list.innerHTML += `<li><i class="fa-solid fa-star text-yellow-500 w-5"></i> <b>Masha Allah ${ranked[0][0]}!</b> Leading the class with a ${Math.round((ranked[0][1].totalCount/ranked[0][1].totalPotential)*100)}% attendance rate.</li>`;
+                list.innerHTML += `<li><i class="fa-solid fa-star text-yellow-500 w-5"></i> <b>Masha Allah ${ranked[0][0]}!</b> Leading the class right now.</li>`;
             }
             
-            // Check for perfect prayers among top students
-            let perfectFajr = ranked.find(r => r[1].breakdown['Subh'] > 0 && r[1].breakdown['Subh'] >= (r[1].totalPotential/5));
-            if(perfectFajr) {
-                list.innerHTML += `<li><i class="fa-solid fa-sun text-orange-500 w-5"></i> <b>${perfectFajr[0]}</b> is doing excellently with morning Subh prayers!</li>`;
-            }
-
             let totalPrayers = 0, totalPotential = 0;
             Object.values(stats).forEach(t => { totalPrayers += t.totalCount; totalPotential += t.totalPotential; });
             let groupPct = totalPotential === 0 ? 0 : Math.round((totalPrayers/totalPotential)*100);
@@ -340,23 +372,39 @@
                  list.innerHTML += `<li><i class="fa-solid fa-chart-line text-purple-500 w-5"></i> Group average is at ${groupPct}%. Let's strive for consistency!</li>`;
             }
 
-            // 3. Render the Paper-Style Sheets
-            renderPaperSheets(dates);
+            renderPaperSheets(dates, stats);
         }
 
-        function renderPaperSheets(dates) {
+        function renderPaperSheets(dates, stats) {
             const container = document.getElementById('paper-sheets-container');
             container.innerHTML = '';
             
+            const todayStr = new Date().toISOString().split('T')[0];
+
             STUDENTS.forEach(student => {
                 let colorTheme = student.gender === 'girl' ? 'text-pink-600 border-pink-200' : 'text-blue-600 border-blue-200';
                 let headerBg = student.gender === 'girl' ? 'bg-pink-50' : 'bg-blue-50';
+                
+                let st = stats[student.name];
+
+                // The exact total requirement requested by the user, directly above the table
+                let summaryBar = `
+                    <div class="summary-bar">
+                        <span><span class="arabic-text font-normal text-lg">صبح:</span> ${st.breakdown['Subh']}</span>
+                        <span><span class="arabic-text font-normal text-lg">ظهر:</span> ${st.breakdown['Luhr']}</span>
+                        <span><span class="arabic-text font-normal text-lg">عصر:</span> ${st.breakdown['Asr']}</span>
+                        <span><span class="arabic-text font-normal text-lg">مغرب:</span> ${st.breakdown['Magrib']}</span>
+                        <span><span class="arabic-text font-normal text-lg">عشاء:</span> ${st.breakdown['Isha']}</span>
+                    </div>
+                `;
                 
                 let tableHtml = `
                 <div class="paper-grid flex flex-col h-[70vh]">
                     <div class="student-header ${headerBg}">
                         <span class="uppercase tracking-widest ${colorTheme}">${student.name}</span>
+                        <span class="text-xs bg-white px-2 py-1 rounded shadow-sm text-gray-500 border border-gray-200">Total: ${st.totalCount} / ${st.totalPotential}</span>
                     </div>
+                    ${summaryBar}
                     <div class="overflow-y-auto flex-grow">
                         <table class="w-full text-left border-collapse">
                             <thead class="sticky top-0 bg-white shadow-sm z-10">
@@ -369,10 +417,8 @@
                 `;
 
                 dates.forEach((date) => {
-                    const dateObj = new Date(date);
-                    const displayDay = dateObj.getDate();
-                    const isToday = date === new Date().toISOString().split('T')[0];
-                    const isFuture = dateObj > today;
+                    const displayDay = parseInt(date.split('-')[2]);
+                    const isToday = date === todayStr;
                     
                     const record = (allRecords[date] && allRecords[date][student.name]) || {};
                     const isExcused = record.excused === true;
@@ -384,13 +430,12 @@
                     } else {
                         cellsHtml = PRAYERS.map((p) => {
                             let done = record[p] === true;
-                            // Replicating a pen tick mark or empty space
                             let icon = done ? '<i class="fa-solid fa-check text-blue-600 font-bold text-xl drop-shadow-sm"></i>' : '';
-                            return `<td class="p-1 text-center border-l border-gray-100 ${isFuture ? 'bg-gray-50 opacity-50' : ''}"><div class="w-full h-8 flex items-center justify-center text-lg">${icon}</div></td>`;
+                            return `<td class="p-1 text-center border-l border-gray-100"><div class="w-full h-8 flex items-center justify-center text-lg">${icon}</div></td>`;
                         }).join('');
                     }
 
-                    const rowClass = isToday ? 'bg-blue-50' : (isFuture ? 'bg-gray-50 text-gray-400' : 'bg-white');
+                    const rowClass = isToday ? 'bg-blue-50' : 'bg-white';
 
                     tableHtml += `
                         <tr class="${rowClass} ${isExcused ? 'excused-row' : 'hover:bg-gray-50 transition-colors'}">
