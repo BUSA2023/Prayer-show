@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noorani Madrasa - Student Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .arabic-text { font-family: 'Amiri', serif; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Styles for the paper-like grid layout */
+        .paper-grid {
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .paper-grid th, .paper-grid td {
+            border: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .paper-grid th { background-color: #f9fafb; font-weight: 600; color: #4b5563; }
+        .paper-grid td:first-child { font-weight: 600; color: #374151; background-color: #f9fafb; width: 60px;}
+        
+        .paper-grid tr.excused-row td { background-color: #fdf2f8 !important; }
+        .excused-text { color: #db2777; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; letter-spacing: 1px;}
+        
+        .student-header {
+            background: #f3f4f6; padding: 12px; font-weight: bold; font-size: 16px; color: #1f2937;
+            border-bottom: 2px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col overflow-hidden">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
+        <div class="loader mb-4"></div>
+        <p class="text-blue-700 font-bold text-lg animate-pulse">Loading Madrasa Records...</p>
+    </div>
+
+    <nav id="main-nav" class="bg-white border-b border-gray-200 shadow-sm z-40 flex-shrink-0">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-100 p-2 rounded-lg text-blue-700">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <span class="font-bold text-lg text-blue-800 hidden sm:block">Noorani Madrasa</span>
+                    <span class="font-bold text-lg text-blue-800 sm:hidden">Madrasa</span>
+                </div>
+                
+                <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-4 py-1.5 text-sm font-medium rounded-md transition bg-white shadow-sm text-gray-800">Summary</button>
+                    <button onclick="switchTab('sheet')" id="tab-sheet" class="px-4 py-1.5 text-sm font-medium rounded-md transition text-gray-500 hover:text-gray-700">Tracker Sheets</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="app-content" class="flex-grow overflow-y-auto bg-[#f8fafc] p-4 md:p-6 w-full fade-in hidden">
+        <div class="max-w-[1400px] mx-auto space-y-6">
+            
+            <!-- Dashboard View -->
+            <div id="student-dashboard-view" class="space-y-6">
+                <!-- Message and Insights -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
+                        <i class="fa-solid fa-quote-left text-blue-400/30 text-6xl absolute top-4 left-4"></i>
+                        <div class="relative z-10">
+                            <h2 class="text-blue-100 text-sm uppercase tracking-wider font-bold mb-2">Usthad's Message</h2>
+                            <p id="student-usthad-msg" class="text-xl md:text-2xl font-medium leading-relaxed mb-6">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center">
+                        <h3 class="text-gray-800 font-bold mb-4 flex items-center"><i class="fa-solid fa-robot text-emerald-500 mr-2"></i> Performance Insights</h3>
+                        <ul id="smart-insights-list" class="space-y-3 text-sm text-gray-600">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Detailed Breakdown Leaderboard -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+                        <h2 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-blue-500 mr-2"></i> Detailed Prayer Breakdown</h2>
+                        <div class="text-xs sm:text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium shadow-inner"><i class="fa-regular fa-calendar mr-1"></i> <span id="current-month-display"></span></div>
+                    </div>
+                    <div id="detailed-stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sheets View -->
+            <div id="sheet-view" class="hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Attendance Record Sheets</h2>
+                        <p class="text-xs text-gray-500">Read-only view of your daily prayers matching the madrasa registers.</p>
+                    </div>
+                </div>
+                
+                <div id="paper-sheets-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-10">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // User's Firebase Configuration
+        const appId = "prayer-5f162";
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwKSTl9ZXrLOF41kCmK5BVlNSEPecRK_Y",
+            authDomain: "prayer-5f162.firebaseapp.com",
+            projectId: "prayer-5f162",
+            storageBucket: "prayer-5f162.firebasestorage.app",
+            messagingSenderId: "728078267159",
+            appId: "1:728078267159:web:96ec460dc907f16f163d52"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const STUDENTS = [
+            { name: 'Niswa', gender: 'girl' }, { name: 'Shahma', gender: 'girl' },
+            { name: 'Rashid', gender: 'boy' }, { name: 'Shamil', gender: 'boy' }, { name: 'Nafith', gender: 'boy' }
+        ];
+        const PRAYERS = ['Subh', 'Luhr', 'Asr', 'Magrib', 'Isha'];
+        const PRAYER_ARABIC = ['صبح', 'ظهر', 'عصر', 'مغرب', 'عشاء']; 
+        
+        let allRecords = {};
+        
+        // Date Setup (From the 9th)
+        const today = new Date();
+        const minDate = new Date(today.getFullYear(), today.getMonth(), 9);
+        if (today.getDate() < 9) minDate.setMonth(minDate.getMonth() - 1);
+        
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        document.getElementById('current-month-display').innerText = `Tracking since ${monthNames[minDate.getMonth()]} 9`;
+
+        async function initApp() {
+            try {
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (user) => {
+                    if (user) setupListeners();
+                });
+            } catch (err) {
+                console.error("Auth Error:", err);
+                document.getElementById('loading-overlay').innerHTML = "<p class='text-red-500 p-4 text-center'>Error connecting to database. Please check connection.</p>";
+            }
+        }
+
+        function setupListeners() {
+            const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global');
+            const recordsRef = collection(db, 'artifacts', appId, 'public', 'data', 'salah_monthly');
+
+            onSnapshot(settingsRef, (docSnap) => {
+                const msg = docSnap.exists() ? docSnap.data().advisement : "Welcome to Noorani Madrasa Salah Tracker!";
+                document.getElementById('student-usthad-msg').innerText = `"${msg}"`;
+            }, (error) => console.error(error));
+
+            onSnapshot(recordsRef, (snapshot) => {
+                allRecords = {};
+                snapshot.forEach(doc => { allRecords[doc.id] = doc.data(); });
+                
+                document.getElementById('loading-overlay').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                
+                updateViews();
+            }, (error) => console.error(error));
+        }
+
+        function calculateDetailedStats() {
+            let stats = {};
+            // Initialize structures
+            STUDENTS.forEach(s => {
+                stats[s.name] = { 
+                    totalCount: 0, 
+                    totalPotential: 0, 
+                    gender: s.gender,
+                    excusedDays: 0, // Track excused days to explain the UI
+                    breakdown: { 'Subh': 0, 'Luhr': 0, 'Asr': 0, 'Magrib': 0, 'Isha': 0 }
+                };
+            });
+            
+            const dates = [];
+            let curr = new Date(minDate);
+            // Generate up to 30 days
+            for(let i=0; i<30; i++) {
+                dates.push(curr.toISOString().split('T')[0]);
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            // Loop through all dates up to today to calculate actuals
+            // We do not add future dates to potential.
+            let calcEnd = new Date();
+            dates.forEach(date => {
+                const dateObj = new Date(date);
+                if (dateObj > calcEnd) return; // Future dates skipped entirely
+                
+                const dayData = allRecords[date] || {};
+                
+                STUDENTS.forEach(s => {
+                    const sData = dayData[s.name] || {};
+                    
+                    // CRITICAL LOGIC FOR MENSES:
+                    // If a student is excused, do NOT add to totalPotential. 
+                    // This means a girl on leave isn't penalized for missing 5 prayers that day.
+                    if (sData.excused === true) {
+                        stats[s.name].excusedDays++; 
+                    } else {
+                        // Normal tracking day
+                        stats[s.name].totalPotential += 5;
+                        PRAYERS.forEach(p => { 
+                            if (sData[p] === true) {
+                                stats[s.name].totalCount++; 
+                                stats[s.name].breakdown[p]++;
+                            }
+                        });
+                    }
+                });
+            });
+
+            return { stats, dates };
+        }
+
+        function updateViews() {
+            const { stats, dates } = calculateDetailedStats();
+            
+            // 1. Render Detailed Stats Cards
+            const container = document.getElementById('detailed-stats-container');
+            container.innerHTML = '';
+            
+            // Sort by percentage instead of raw count, to be fair to those with excused days
+            let ranked = Object.entries(stats).sort((a,b) => {
+                let pctA = a[1].totalPotential === 0 ? 0 : (a[1].totalCount / a[1].totalPotential);
+                let pctB = b[1].totalPotential === 0 ? 0 : (b[1].totalCount / b[1].totalPotential);
+                return pctB - pctA;
+            });
+            
+            ranked.forEach(([name, data], index) => {
+                let medal = index === 0 ? '<i class="fa-solid fa-medal text-yellow-500 text-xl"></i>' : 
+                            index === 1 ? '<i class="fa-solid fa-medal text-gray-400 text-lg"></i>' : 
+                            index === 2 ? '<i class="fa-solid fa-medal text-amber-700 text-base"></i>' : 
+                            `<span class="font-bold text-gray-400 text-sm">#${index+1}</span>`;
+                
+                let pct = data.totalPotential === 0 ? 100 : Math.round((data.totalCount/data.totalPotential)*100);
+                let colorClass = data.gender === 'girl' ? 'bg-pink-50 border-pink-100' : 'bg-blue-50 border-blue-100';
+
+                // Create the detailed breakdown list
+                let breakdownHtml = PRAYERS.map((p, i) => `
+                    <div class="flex justify-between items-center text-sm py-1.5 border-b border-black/5 last:border-0">
+                        <span class="text-gray-600 font-medium">${p} <span class="arabic-text text-gray-400 ml-1">(${PRAYER_ARABIC[i]})</span></span>
+                        <span class="font-bold text-gray-800 bg-white px-2 py-0.5 rounded shadow-sm">${data.breakdown[p]}</span>
+                    </div>
+                `).join('');
+
+                // Display excused days clearly so they know it's not held against them
+                let excusedHtml = data.excusedDays > 0 
+                    ? `<div class="text-xs text-pink-600 font-medium mt-2 bg-pink-100/50 p-1.5 rounded text-center border border-pink-200/50">
+                        <i class="fa-solid fa-moon mr-1"></i> ${data.excusedDays} day(s) on leave<br>
+                        <span class="text-[10px] text-pink-500">(Excluded from potential total)</span>
+                       </div>` 
+                    : '';
+
+                container.innerHTML += `
+                    <div class="${colorClass} border rounded-2xl p-5 flex flex-col relative transition hover:shadow-lg hover:-translate-y-1 bg-gradient-to-b from-transparent to-black/[0.02]">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold text-gray-800 text-xl uppercase tracking-wide">${name}</h4>
+                            ${medal}
+                        </div>
+                        
+                        <div class="flex items-end gap-2 mb-2">
+                            <span class="text-4xl font-black text-gray-800 leading-none">${data.totalCount}</span>
+                            <span class="text-sm font-medium text-gray-500 mb-1 tracking-tight">/ ${data.totalPotential} Prayers</span>
+                        </div>
+                        
+                        <div class="flex-grow mb-4 mt-3 bg-white/70 backdrop-blur-sm p-3 rounded-xl border border-white">
+                            ${breakdownHtml}
+                        </div>
+                        
+                        <div class="mt-auto">
+                            <div class="flex justify-between text-[11px] text-gray-500 uppercase font-bold tracking-wider mb-1.5">
+                                <span>Attendance Rate</span>
+                                <span>${pct}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-1 shadow-inner overflow-hidden">
+                                <div class="bg-blue-500 h-full rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
+                            </div>
+                            ${excusedHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 2. Generate Smart Insights based on detailed data
+            const list = document.getElementById('smart-insights-list');
+            list.innerHTML = '';
+            if (ranked[0][1].totalCount > 0) {
+                list.innerHTML += `<li><i class="fa-solid fa-star text-yellow-500 w-5"></i> <b>Masha Allah ${ranked[0][0]}!</b> Leading the class with a ${Math.round((ranked[0][1].totalCount/ranked[0][1].totalPotential)*100)}% attendance rate.</li>`;
+            }
+            
+            // Check for perfect prayers among top students
+            let perfectFajr = ranked.find(r => r[1].breakdown['Subh'] > 0 && r[1].breakdown['Subh'] >= (r[1].totalPotential/5));
+            if(perfectFajr) {
+                list.innerHTML += `<li><i class="fa-solid fa-sun text-orange-500 w-5"></i> <b>${perfectFajr[0]}</b> is doing excellently with morning Subh prayers!</li>`;
+            }
+
+            let totalPrayers = 0, totalPotential = 0;
+            Object.values(stats).forEach(t => { totalPrayers += t.totalCount; totalPotential += t.totalPotential; });
+            let groupPct = totalPotential === 0 ? 0 : Math.round((totalPrayers/totalPotential)*100);
+            
+            if (groupPct >= 90) {
+                 list.innerHTML += `<li><i class="fa-solid fa-users text-emerald-500 w-5"></i> <b>Amazing group effort!</b> The class is maintaining a ${groupPct}% completion rate.</li>`;
+            } else if (groupPct > 0) {
+                 list.innerHTML += `<li><i class="fa-solid fa-chart-line text-purple-500 w-5"></i> Group average is at ${groupPct}%. Let's strive for consistency!</li>`;
+            }
+
+            // 3. Render the Paper-Style Sheets
+            renderPaperSheets(dates);
+        }
+
+        function renderPaperSheets(dates) {
+            const container = document.getElementById('paper-sheets-container');
+            container.innerHTML = '';
+            
+            STUDENTS.forEach(student => {
+                let colorTheme = student.gender === 'girl' ? 'text-pink-600 border-pink-200' : 'text-blue-600 border-blue-200';
+                let headerBg = student.gender === 'girl' ? 'bg-pink-50' : 'bg-blue-50';
+                
+                let tableHtml = `
+                <div class="paper-grid flex flex-col h-[70vh]">
+                    <div class="student-header ${headerBg}">
+                        <span class="uppercase tracking-widest ${colorTheme}">${student.name}</span>
+                    </div>
+                    <div class="overflow-y-auto flex-grow">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 bg-white shadow-sm z-10">
+                                <tr>
+                                    <th class="p-2 border-b border-r text-xs uppercase tracking-wider text-gray-500 bg-gray-50">Date</th>
+                                    ${PRAYER_ARABIC.map(p => `<th class="p-2 border-b arabic-text font-normal text-lg">${p}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                dates.forEach((date) => {
+                    const dateObj = new Date(date);
+                    const displayDay = dateObj.getDate();
+                    const isToday = date === new Date().toISOString().split('T')[0];
+                    const isFuture = dateObj > today;
+                    
+                    const record = (allRecords[date] && allRecords[date][student.name]) || {};
+                    const isExcused = record.excused === true;
+                    
+                    let cellsHtml = '';
+                    
+                    if (isExcused) {
+                        cellsHtml = `<td colspan="5" class="p-1 excused-row text-center"><div class="excused-text">🌙 Excused (Leave)</div></td>`;
+                    } else {
+                        cellsHtml = PRAYERS.map((p) => {
+                            let done = record[p] === true;
+                            // Replicating a pen tick mark or empty space
+                            let icon = done ? '<i class="fa-solid fa-check text-blue-600 font-bold text-xl drop-shadow-sm"></i>' : '';
+                            return `<td class="p-1 text-center border-l border-gray-100 ${isFuture ? 'bg-gray-50 opacity-50' : ''}"><div class="w-full h-8 flex items-center justify-center text-lg">${icon}</div></td>`;
+                        }).join('');
+                    }
+
+                    const rowClass = isToday ? 'bg-blue-50' : (isFuture ? 'bg-gray-50 text-gray-400' : 'bg-white');
+
+                    tableHtml += `
+                        <tr class="${rowClass} ${isExcused ? 'excused-row' : 'hover:bg-gray-50 transition-colors'}">
+                            <td class="p-2 text-center font-bold border-r sticky left-0 z-0 ${isToday ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'}">${displayDay}</td>
+                            ${cellsHtml}
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `</tbody></table></div></div>`;
+                container.innerHTML += tableHtml;
+            });
+        }
+
+        window.switchTab = function(tabName) {
+            document.getElementById('student-dashboard-view').classList.add('hidden');
+            document.getElementById('sheet-view').classList.add('hidden');
+            document.getElementById('tab-dashboard').className = "px-4 py-1.5 text-sm font-medium rounded-md transition text-gray-500 hover:text-gray-700";
+            document.getElementById('tab-sheet').className = "px-4 py-1.5 text-sm font-medium rounded-md transition text-gray-500 hover:text-gray-700";
+            
+            document.getElementById(`tab-${tabName}`).className = "px-4 py-1.5 text-sm font-medium rounded-md transition bg-white shadow-sm text-gray-800";
+            if (tabName === 'dashboard') document.getElementById('student-dashboard-view').classList.remove('hidden');
+            if (tabName === 'sheet') document.getElementById('sheet-view').classList.remove('hidden');
+        };
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
