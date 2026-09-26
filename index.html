@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Noorani Madrasa - Student Portal</title>
+    <title>HIM PULLANITHAZHAM - Student Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -74,8 +74,8 @@
                     <div class="bg-blue-100 p-2 rounded-lg text-blue-700">
                         <i class="fa-solid fa-users"></i>
                     </div>
-                    <span class="font-bold text-lg text-blue-800 hidden sm:block">Noorani Madrasa</span>
-                    <span class="font-bold text-lg text-blue-800 sm:hidden">Madrasa</span>
+                    <span class="font-bold text-lg text-blue-800 hidden sm:block">HIM PULLANITHAZHAM</span>
+                    <span class="font-bold text-lg text-blue-800 sm:hidden">HIM Madrasa</span>
                 </div>
                 
                 <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
@@ -148,13 +148,13 @@
         import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCwKSTl9ZXrLOF41kCmK5BVlNSEPecRK_Y",
-            authDomain: "prayer-5f162.firebaseapp.com",
-            projectId: "prayer-5f162",
-            storageBucket: "prayer-5f162.firebasestorage.app",
-            messagingSenderId: "728078267159",
-            appId: "1:728078267159:web:96ec460dc907f16f163d52",
-            measurementId: "G-1P878W2W5J"
+            apiKey: "AIzaSyA6ruQWH9yo2eVIzTytjg8QL51a3uQzhY0",
+            authDomain: "prayers-9.firebaseapp.com",
+            projectId: "prayers-9",
+            storageBucket: "prayers-9.firebasestorage.app",
+            messagingSenderId: "990655719635",
+            appId: "1:990655719635:web:b94075337b5f535784cc26",
+            measurementId: "G-GC2NZS7ZM6"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -168,6 +168,58 @@
         ];
         const PRAYERS = ['Subh', 'Luhr', 'Asr', 'Magrib', 'Isha'];
         const PRAYER_ARABIC = ['صبح', 'ظهر', 'عصر', 'مغرب', 'عشاء']; 
+        
+        // --- Built-in Islamic Quotes Engine (Malayalam) ---
+        // --- Built-in Islamic Quotes Engine (Arabic + Malayalam) ---
+        const islamicQuotes = [
+            {
+                arabic: "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
+                malayalam: "നിശ്ചയമായും, പ്രയാസത്തോടൊപ്പം എളുപ്പവുമുണ്ട്. (വിശുദ്ധ ഖുർആൻ 94:6)"
+            },
+            {
+                arabic: "حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ",
+                malayalam: "നമുക്ക് അല്ലാഹു മതി! അവൻ എത്രയോ നല്ല ഭരമേൽപ്പിക്കപ്പെടുന്നവൻ! (വിശുദ്ധ ഖുർആൻ 3:173)"
+            },
+            {
+                arabic: "وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ",
+                malayalam: "എന്റെ വിജയവും അനുഗ്രഹവും അല്ലാഹുവിൽ നിന്നു മാത്രമാണ്. (വിശുദ്ധ ഖുർആൻ 11:88)"
+            },
+            {
+                arabic: "الصَّبْرُ نِصْفُ الإِيمَانِ",
+                malayalam: "ക്ഷമ എന്നത് വിശ്വാസത്തിന്റെ പകുതിയാണ്. (ഹദീസ്)"
+            },
+            {
+                arabic: "خِيَارُكُمْ أَحَاسِنُكُمْ أَخْلاقًا",
+                malayalam: "നിങ്ങളിൽ ഏറ്റവും ഉത്തമർ സൽസ്വഭാവികളാണ്. (ബുഖാരി)"
+            },
+            {
+                arabic: "الطُّهُورُ شَطْرُ الإِيمَانِ",
+                malayalam: "ശുചിത്വം വിശ്വാസത്തിന്റെ പകുതിയാണ്. (മുസ്ലിം)"
+            },
+            {
+                arabic: "وَلَا تَهِنُوا وَلَا تَحْزَنُوا",
+                malayalam: "നിങ്ങൾ ദുഃഖിക്കുകയോ നിരാശപ്പെടുകയോ അരുത്. (വിശുദ്ധ ഖുർആൻ 3:139)"
+            },
+            {
+                arabic: "لَيْسَ مِنَّا مَنْ لَمْ يَرْحَمْ صَغِيرَنَا وَيُوَقِّرْ كَبِيرَنَا",
+                malayalam: "ചെറിയവരോട് കരുണ കാണിക്കാത്തവനും മുതിർന്നവരെ ബഹുമാനിക്കാത്തവനും നമ്മിൽ പെട്ടവനല്ല. (തിർമിദി)"
+            },
+            {
+                arabic: "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ",
+                malayalam: "അറിവ് നേടൽ ഓരോ മുസ്ലിമിനും നിർബന്ധമാണ്. (ഇബ്നു മാജ)"
+            },
+            {
+                arabic: "إِنَّ اللَّهَ يُحِبُّ التَّوَّابِينَ وَيُحِبُّ الْمُتَطَهِّرِينَ",
+                malayalam: "നിശ്ചയം, പശ്ചാത്തപിച്ചു മടങ്ങുന്നവരെയും ശുചിത്വം പാലിക്കുന്നവരെയും അല്ലാഹു ഇഷ്ടപ്പെടുന്നു. (വിശുദ്ധ ഖുർആൻ 2:222)"
+            }
+        ];
+
+        // Get a random quote based on the current day of the month
+        function getDailyQuote() {
+            const todayNum = new Date().getDate();
+            const quoteIndex = todayNum % islamicQuotes.length;
+            return islamicQuotes[quoteIndex];
+        }
         
         let allRecords = {};
         
@@ -194,12 +246,14 @@
             const year = parseInt(y);
             const month = parseInt(m) - 1; 
             
-            let startDay = 1;
-            // Strict check: if September 2026, start on the 9th
+            let startDay = 1; // By default, EVERY month automatically starts on the 1st
+            
+            // Strict check: ONLY September 2026 starts on the 9th
             if (year === 2026 && month === 8) { 
                 startDay = 9;
             }
             
+            // Automatically gets the exact number of days in ANY selected month (e.g., Oct=31, Nov=30)
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const dates = [];
             
@@ -227,8 +281,21 @@
             const recordsRef = collection(db, 'salah_monthly');
 
             onSnapshot(settingsRef, (docSnap) => {
-                const msg = docSnap.exists() ? docSnap.data().advisement : "Welcome to Noorani Madrasa Salah Tracker!";
-                document.getElementById('student-usthad-msg').innerText = `"${msg}"`;
+                // Determine what message to show: Use Admin message if it exists and isn't empty, otherwise use daily random quote.
+                let displayMsgHtml = "";
+                let adminMsg = docSnap.exists() ? docSnap.data().advisement : "";
+                
+                if (adminMsg && adminMsg.trim() !== "") {
+                     displayMsgHtml = `<div class="text-xl font-medium">"${adminMsg}"</div>`;
+                } else {
+                     const daily = getDailyQuote();
+                     displayMsgHtml = `<div class="flex flex-col gap-4 text-center items-center justify-center pt-2">
+                        <span class="text-3xl md:text-4xl font-normal arabic-text leading-relaxed text-blue-50 drop-shadow-md" dir="rtl">${daily.arabic}</span>
+                        <span class="text-blue-200 text-[15px] md:text-base font-bold">${daily.malayalam}</span>
+                     </div>`;
+                }
+                
+                document.getElementById('student-usthad-msg').innerHTML = displayMsgHtml;
             }, (error) => console.error(error));
 
             onSnapshot(recordsRef, (snapshot) => {
@@ -255,35 +322,34 @@
                     totalCount: 0, 
                     totalPotential: 0, 
                     gender: s.gender,
-                    excusedDays: 0,
+                    excusedWaqths: 0,
                     breakdown: { 'Subh': 0, 'Luhr': 0, 'Asr': 0, 'Magrib': 0, 'Isha': 0 }
                 };
             });
             
             const dates = getDatesForViewMonth();
-            let calcEnd = new Date(); // Do not count future days into potential
 
             dates.forEach(date => {
-                const dateObj = new Date(date);
-                if (dateObj > calcEnd) return; 
-                
                 const dayData = allRecords[date] || {};
                 
                 STUDENTS.forEach(s => {
                     const sData = dayData[s.name] || {};
+                    let isFullDayExcused = sData.excused === true; // Legacy fallback
                     
-                    // EXCUSED LOGIC: Days marked as excused are completely ignored in potential
-                    if (sData.excused === true) {
-                        stats[s.name].excusedDays++; 
-                    } else {
-                        stats[s.name].totalPotential += 5;
-                        PRAYERS.forEach(p => { 
-                            if (sData[p] === true) {
+                    PRAYERS.forEach(p => { 
+                        let val = sData[p];
+                        if (isFullDayExcused) val = 'excused';
+                        
+                        if (val === 'excused') {
+                            stats[s.name].excusedWaqths++; 
+                        } else {
+                            stats[s.name].totalPotential++;
+                            if (val === true || val === '1') {
                                 stats[s.name].totalCount++; 
                                 stats[s.name].breakdown[p]++;
                             }
-                        });
-                    }
+                        }
+                    });
                 });
             });
 
@@ -319,9 +385,9 @@
                     </div>
                 `).join('');
 
-                let excusedHtml = data.excusedDays > 0 
+                let excusedHtml = data.excusedWaqths > 0 
                     ? `<div class="text-xs text-pink-600 font-medium mt-2 bg-pink-100/50 p-1.5 rounded text-center border border-pink-200/50">
-                        <i class="fa-solid fa-moon mr-1"></i> ${data.excusedDays} day(s) excused leave<br>
+                        <i class="fa-solid fa-moon mr-1"></i> ${data.excusedWaqths} Waqth(s) excused<br>
                        </div>` 
                     : '';
 
@@ -387,7 +453,6 @@
                 
                 let st = stats[student.name];
 
-                // The exact total requirement requested by the user, directly above the table
                 let summaryBar = `
                     <div class="summary-bar">
                         <span><span class="arabic-text font-normal text-lg">صبح:</span> ${st.breakdown['Subh']}</span>
@@ -409,7 +474,7 @@
                         <table class="w-full text-left border-collapse">
                             <thead class="sticky top-0 bg-white shadow-sm z-10">
                                 <tr>
-                                    <th class="p-2 border-b border-r text-xs uppercase tracking-wider text-gray-500 bg-gray-50">Date</th>
+                                    <th class="p-2 border-b border-r text-xs uppercase tracking-wider text-gray-500 bg-gray-50 whitespace-nowrap">Date</th>
                                     ${PRAYER_ARABIC.map(p => `<th class="p-2 border-b arabic-text font-normal text-lg">${p}</th>`).join('')}
                                 </tr>
                             </thead>
@@ -417,29 +482,32 @@
                 `;
 
                 dates.forEach((date) => {
-                    const displayDay = parseInt(date.split('-')[2]);
+                    const [year, month, day] = date.split('-');
+                    const displayDate = `${day}-${month}-${year}`;
                     const isToday = date === todayStr;
                     
                     const record = (allRecords[date] && allRecords[date][student.name]) || {};
-                    const isExcused = record.excused === true;
+                    let isFullDayExcused = record.excused === true; // Legacy fallback
                     
-                    let cellsHtml = '';
-                    
-                    if (isExcused) {
-                        cellsHtml = `<td colspan="5" class="p-1 excused-row text-center"><div class="excused-text">🌙 Excused (Leave)</div></td>`;
-                    } else {
-                        cellsHtml = PRAYERS.map((p) => {
-                            let done = record[p] === true;
-                            let icon = done ? '<i class="fa-solid fa-check text-blue-600 font-bold text-xl drop-shadow-sm"></i>' : '';
-                            return `<td class="p-1 text-center border-l border-gray-100"><div class="w-full h-8 flex items-center justify-center text-lg">${icon}</div></td>`;
-                        }).join('');
-                    }
+                    let cellsHtml = PRAYERS.map((p) => {
+                        let val = record[p];
+                        if (isFullDayExcused) val = 'excused';
+                        
+                        let done = val === true || val === '1';
+                        let excused = val === 'excused';
+                        
+                        let icon = '';
+                        if (done) icon = '<i class="fa-solid fa-check text-blue-600 font-bold text-xl drop-shadow-sm"></i>';
+                        else if (excused) icon = '<i class="fa-solid fa-moon text-pink-400 font-bold text-lg drop-shadow-sm"></i>';
+                        
+                        return `<td class="p-1 text-center border-l border-gray-100"><div class="w-full h-8 flex items-center justify-center text-lg">${icon}</div></td>`;
+                    }).join('');
 
                     const rowClass = isToday ? 'bg-blue-50' : 'bg-white';
 
                     tableHtml += `
-                        <tr class="${rowClass} ${isExcused ? 'excused-row' : 'hover:bg-gray-50 transition-colors'}">
-                            <td class="p-2 text-center font-bold border-r sticky left-0 z-0 ${isToday ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'}">${displayDay}</td>
+                        <tr class="${rowClass} hover:bg-gray-50 transition-colors">
+                            <td class="p-2 text-center font-bold border-r sticky left-0 z-0 whitespace-nowrap ${isToday ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'}">${displayDate}</td>
                             ${cellsHtml}
                         </tr>
                     `;
